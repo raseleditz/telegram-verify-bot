@@ -30,7 +30,7 @@ app.post('/verify', async (req, res) => {
 
         const url =
             `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember` +
-            `?chat_id=${CHANNEL_USERNAME}&user_id=${userId}`;
+            `?chat_id=${CHANNEL_ID}&user_id=${userId}`;
 
         const response = await fetch(url);
         const data = await response.json();

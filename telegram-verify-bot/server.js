@@ -3,10 +3,10 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors({
-    origin: 'http://localhost:8000'
+    origin: 'https://raselenhancer.netlify.app'
 }));
 
 app.use(express.json());
@@ -71,6 +71,6 @@ app.post('/verify', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Verification server running at http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Verification server running on port ${PORT}`);
 });

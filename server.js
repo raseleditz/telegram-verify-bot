@@ -6,7 +6,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-
 app.use(express.json());
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -16,14 +15,12 @@ app.post('/verify', async (req, res) => {
 
     const { userId } = req.body;
 
-    if (!data.ok) {
-    console.error('Telegram API Error:', data);
-
-    return res.json({
-        success: false,
-        message: data.description || 'Telegram API error'
-    });
-}
+    if (!userId) {
+        return res.json({
+            success: false,
+            message: 'Telegram ID is required'
+        });
+    }
 
     try {
 
@@ -34,10 +31,13 @@ app.post('/verify', async (req, res) => {
         const response = await fetch(url);
         const data = await response.json();
 
+        // Telegram API error
         if (!data.ok) {
+            console.error('Telegram API Error:', data);
+
             return res.json({
                 success: false,
-                message: 'Invalid Telegram ID or user not found.'
+                message: data.description || 'Telegram API error'
             });
         }
 

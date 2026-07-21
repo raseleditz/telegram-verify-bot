@@ -35,7 +35,6 @@ app.post('/verify', async (req, res) => {
         const response = await fetch(url);
         const data = await response.json();
 
-        // Telegram API error
         if (!data.ok) {
             console.error('Telegram API Error:', data);
 

@@ -18,12 +18,14 @@ app.post('/verify', async (req, res) => {
 
     const { userId } = req.body;
 
-    if (!userId) {
-        return res.json({
-            success: false,
-            message: 'Telegram ID is required'
-        });
-    }
+    if (!data.ok) {
+    console.error('Telegram API Error:', data);
+
+    return res.json({
+        success: false,
+        message: data.description || 'Telegram API error'
+    });
+}
 
     try {
 

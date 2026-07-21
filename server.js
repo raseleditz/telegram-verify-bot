@@ -32,12 +32,14 @@ app.post('/verify', async (req, res) => {
             `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember` +
             `?chat_id=${CHANNEL_ID}&user_id=${userId}`;
 
+        console.log('Checking URL:', url.replace(BOT_TOKEN, 'TOKEN_HIDDEN'));
+
         const response = await fetch(url);
         const data = await response.json();
 
-        if (!data.ok) {
-            console.error('Telegram API Error:', data);
+        console.log('Telegram response:', data);
 
+        if (!data.ok) {
             return res.json({
                 success: false,
                 message: data.description || 'Telegram API error'
@@ -46,12 +48,11 @@ app.post('/verify', async (req, res) => {
 
         const status = data.result.status;
 
-        const isMember =
+        if (
             status === 'member' ||
             status === 'administrator' ||
-            status === 'creator';
-
-        if (isMember) {
+            status === 'creator'
+        ) {
             return res.json({
                 success: true,
                 message: 'You are a verified member!'

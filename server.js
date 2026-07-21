@@ -13,7 +13,7 @@ app.get('/', (req, res) => {
 });
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const CHANNEL_USERNAME = '-1001882613037';
+const CHANNEL_ID = '-1001882613037';
 
 app.post('/verify', async (req, res) => {
 

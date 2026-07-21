@@ -8,6 +8,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => {
+    res.send('Telegram Verification Server is Running!');
+});
+
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_USERNAME = '@raselff148';
 

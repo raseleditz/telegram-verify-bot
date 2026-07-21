@@ -15,6 +15,28 @@ app.get('/', (req, res) => {
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_ID = '-1001882613037';
 
+app.get('/debug', async (req, res) => {
+    try {
+        const response = await fetch(
+            `https://api.telegram.org/bot${BOT_TOKEN}/getMe`
+        );
+
+        const data = await response.json();
+
+        res.json({
+            token_exists: !!BOT_TOKEN,
+            token_length: BOT_TOKEN ? BOT_TOKEN.length : 0,
+            token_last_6: BOT_TOKEN ? BOT_TOKEN.slice(-6) : null,
+            telegram_response: data
+        });
+
+    } catch (error) {
+        res.json({
+            error: error.message
+        });
+    }
+});
+
 app.post('/verify', async (req, res) => {
 
     const { userId } = req.body;

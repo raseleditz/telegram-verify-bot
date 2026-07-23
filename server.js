@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const { readFileSync } = require('fs');
 require('dotenv').config();
 const { resolveBotToken, buildTelegramApiUrl, getBotTokenDiagnostics } = require('./telegram-config');
 
@@ -189,28 +191,85 @@ async function startTelegramBot() {
                 // /start COMMAND
                 // ============================================
 
-                if (text === '/start') {
+                if (/^\/start(?:@[A-Za-z0-9_]+)?$/i.test(text)) {
 
-                    await fetch(
-                        buildTelegramApiUrl(BOT_TOKEN, 'sendMessage'),
-                        {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                chat_id: chatId,
-                                text:
-`👋 Welcome to Rasel Checker!
+                    const photoPath = path.join(__dirname, 'banner.png');
+                    const caption = `<b>👋 Welcome to Rasel Enhancer!</b>\n\n<b>🆔 Your Telegram ID:</b> <code>${chatId}</code>`;
+                    const imageBuffer = readFileSync(photoPath);
+                    const imageBlob = new Blob([imageBuffer], { type: 'image/png' });
+                    const formData = new FormData();
+                    formData.append('chat_id', String(chatId));
+                    formData.append('photo', imageBlob, 'banner.png');
+                    formData.append('caption', caption);
+                    formData.append('parse_mode', 'HTML');
 
-🆔 Your Telegram ID:
+                    try {
 
-${chatId}
+                        const photoResponse = await fetch(
+                            buildTelegramApiUrl(BOT_TOKEN, 'sendPhoto'),
+                            {
+                                method: 'POST',
+                                body: formData
+                            }
+                        );
 
-এই ID টি website verification-এর জন্য ব্যবহার করুন।`
-                            })
+                        const responseText = await photoResponse.text();
+                        let photoData = null;
+
+                        if (responseText) {
+                            try {
+                                photoData = JSON.parse(responseText);
+                            } catch (parseError) {
+                                console.error('Telegram /start sendPhoto returned invalid JSON:', {
+                                    status: photoResponse.status,
+                                    body: responseText,
+                                    error: parseError.message
+                                });
+                            }
                         }
-                    );
+
+                        if (!photoResponse.ok || !photoData || !photoData.ok) {
+                            console.error('Telegram /start sendPhoto failed:', {
+                                status: photoResponse.status,
+                                body: responseText,
+                                parsed: photoData
+                            });
+
+                            await fetch(
+                                buildTelegramApiUrl(BOT_TOKEN, 'sendMessage'),
+                                {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        chat_id: chatId,
+                                        text: caption,
+                                        parse_mode: 'HTML'
+                                    })
+                                }
+                            );
+                        }
+
+                    } catch (error) {
+
+                        console.error('Telegram /start error:', error);
+
+                        await fetch(
+                            buildTelegramApiUrl(BOT_TOKEN, 'sendMessage'),
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    chat_id: chatId,
+                                    text: caption
+                                })
+                            }
+                        );
+
+                    }
 
                 }
 
@@ -249,16 +308,16 @@ ${chatId}
                     ) {
 
                         reply =
-`✅ Verified!
+`✅ <b>Verified!</b>
 
-You are a member of RASEL FF 148 😍`;
+You are a member of <b>RASEL FF 148 😍</b>`;
 
                     } else {
 
                         reply =
-`❌ Not Verified!
+`❌ <b>Not Verified!</b>
 
-Please join the RASEL FF 148 channel first.`;
+Please join the <b>RASEL FF 148</b> channel first.`;
 
                     }
 
@@ -271,7 +330,8 @@ Please join the RASEL FF 148 channel first.`;
                             },
                             body: JSON.stringify({
                                 chat_id: chatId,
-                                text: reply
+                                text: reply,
+                                parse_mode: 'HTML'
                             })
                         }
                     );

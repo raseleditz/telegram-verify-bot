@@ -15,6 +15,11 @@ app.get('/', (req, res) => {
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHANNEL_ID = '-1001882613037';
 
+
+// ============================================
+// DEBUG ROUTE
+// ============================================
+
 app.get('/debug', async (req, res) => {
     try {
         const response = await fetch(
@@ -37,6 +42,11 @@ app.get('/debug', async (req, res) => {
     }
 });
 
+
+// ============================================
+// TELEGRAM MEMBERSHIP VERIFICATION
+// ============================================
+
 app.post('/verify', async (req, res) => {
 
     const { userId } = req.body;
@@ -58,7 +68,7 @@ app.post('/verify', async (req, res) => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    chat_id: -1001882613037,
+                    chat_id: CHANNEL_ID,
                     user_id: Number(userId)
                 })
             }
@@ -104,6 +114,11 @@ app.post('/verify', async (req, res) => {
         });
     }
 });
+
+
+// ============================================
+// START SERVER
+// ============================================
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Verification server running on port ${PORT}`);

@@ -110,12 +110,92 @@ app.post('/verify', async (req, res) => {
 
         if (isMember) {
 
-            return res.json({
-                success: true,
-                message: 'You are a verified member!'
-            });
+    const telegramUser = data.result.user;
+
+    let profilePhotoUrl = null;
+
+    try {
+
+        const photoResponse = await fetch(
+            buildTelegramApiUrl(BOT_TOKEN, 'getUserProfilePhotos'),
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: telegramUser.id,
+                    limit: 1
+                })
+            }
+        );
+
+        const photoData = await photoResponse.json();
+
+        if (
+            photoData.ok &&
+            photoData.result.total_count > 0 &&
+            photoData.result.photos.length > 0
+        ) {
+
+            const photoSizes = photoData.result.photos[0];
+
+            // Largest available photo
+            const largestPhoto = photoSizes[photoSizes.length - 1];
+
+            const fileResponse = await fetch(
+                buildTelegramApiUrl(BOT_TOKEN, 'getFile'),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file_id: largestPhoto.file_id
+                    })
+                }
+            );
+
+            const fileData = await fileResponse.json();
+
+            if (fileData.ok) {
+
+                profilePhotoUrl =
+                    `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
+
+            }
 
         }
+
+    } catch (photoError) {
+
+        console.error('Profile photo error:', photoError);
+
+    }
+
+    return res.json({
+
+        success: true,
+
+        message: 'You are a verified member!',
+
+        user: {
+
+            id: telegramUser.id,
+
+            username: telegramUser.username || null,
+
+            firstName: telegramUser.first_name || '',
+
+            lastName: telegramUser.last_name || '',
+
+            profilePhotoUrl
+
+        }
+
+    });
+
+}
 
         return res.json({
             success: false,

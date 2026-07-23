@@ -540,6 +540,41 @@ app.get("/admin/users", (req, res) => {
 });
 
 
+// ============================================
+// CHANGE USER PLAN
+// ============================================
+
+app.post("/admin/set-plan", (req, res) => {
+
+    const { id, plan } = req.body;
+
+    const users = loadUsers();
+
+    if (!users[id]) {
+        return res.json({
+            success: false,
+            message: "User not found"
+        });
+    }
+
+    users[id].plan = plan;
+
+    if (plan === "premium") {
+        users[id].premiumUntil = "Lifetime";
+    } else {
+        users[id].premiumUntil = null;
+    }
+
+    saveUsers(users);
+
+    res.json({
+        success: true,
+        message: "Plan Updated"
+    });
+
+});
+
+
 
 app.listen(PORT, '0.0.0.0', () => {
 

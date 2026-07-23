@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const { resolveBotToken, buildTelegramApiUrl, getBotTokenDiagnostics } = require('./telegram-config');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-const BOT_TOKEN = process.env.BOT_TOKEN;
+const BOT_TOKEN = resolveBotToken(process.env);
 const CHANNEL_ID = '-1001882613037';
 
 
@@ -29,16 +30,15 @@ app.get('/debug', async (req, res) => {
 
     try {
 
-        const response = await fetch(
-            `https://api.telegram.org/bot${BOT_TOKEN}/getMe`
-        );
-
+        const diagnostics = getBotTokenDiagnostics(process.env);
+        const response = await fetch(buildTelegramApiUrl(BOT_TOKEN, 'getMe'));
         const data = await response.json();
 
         res.json({
-            token_exists: !!BOT_TOKEN,
-            token_length: BOT_TOKEN ? BOT_TOKEN.length : 0,
-            token_last_6: BOT_TOKEN ? BOT_TOKEN.slice(-6) : null,
+            token_exists: diagnostics.token_exists,
+            token_length: diagnostics.token_length,
+            token_format_ok: diagnostics.token_format_ok,
+            token_source: diagnostics.source,
             telegram_response: data
         });
 
@@ -73,7 +73,7 @@ app.post('/verify', async (req, res) => {
     try {
 
         const response = await fetch(
-            `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember`,
+            buildTelegramApiUrl(BOT_TOKEN, 'getChatMember'),
             {
                 method: 'POST',
                 headers: {
@@ -144,20 +144,23 @@ async function startTelegramBot() {
 
     if (!BOT_TOKEN) {
 
-        console.error('BOT_TOKEN is missing!');
+        console.error('BOT_TOKEN is missing or invalid. Set BOT_TOKEN (or TELEGRAM_BOT_TOKEN) before starting the bot.');
 
         return;
 
     }
 
-    console.log('Telegram bot polling started...');
+    console.log('Telegram bot polling started with token source:', getBotTokenDiagnostics(process.env).source);
 
     while (true) {
 
         try {
 
             const response = await fetch(
-                `https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=30`
+                buildTelegramApiUrl(BOT_TOKEN, 'getUpdates', {
+                    offset: lastUpdateId + 1,
+                    timeout: 30
+                })
             );
 
             const data = await response.json();
@@ -189,7 +192,7 @@ async function startTelegramBot() {
                 if (text === '/start') {
 
                     await fetch(
-                        `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+                        buildTelegramApiUrl(BOT_TOKEN, 'sendMessage'),
                         {
                             method: 'POST',
                             headers: {
@@ -219,7 +222,7 @@ ${chatId}
                 if (text === '/check') {
 
                     const memberResponse = await fetch(
-                        `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember`,
+                        buildTelegramApiUrl(BOT_TOKEN, 'getChatMember'),
                         {
                             method: 'POST',
                             headers: {
@@ -260,7 +263,7 @@ Please join the RASEL FF 148 channel first.`;
                     }
 
                     await fetch(
-                        `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+                        buildTelegramApiUrl(BOT_TOKEN, 'sendMessage'),
                         {
                             method: 'POST',
                             headers: {

@@ -1,7 +1,15 @@
 const { TelegramBot } = require('node-telegram-bot-api');
 require('dotenv').config();
+const { resolveBotToken, buildTelegramApiUrl } = require('./telegram-config');
 
-const bot = new TelegramBot(process.env.BOT_TOKEN, {
+const BOT_TOKEN = resolveBotToken(process.env);
+
+if (!BOT_TOKEN) {
+    console.error('BOT_TOKEN is missing. Please set BOT_TOKEN or TELEGRAM_BOT_TOKEN before starting the bot.');
+    process.exit(1);
+}
+
+const bot = new TelegramBot(BOT_TOKEN, {
     polling: true
 });
 
@@ -21,7 +29,7 @@ bot.onText(/\/start/, (msg) => {
     );
 });
 
-const CHANNEL_USERNAME = '@raselff148';
+const CHANNEL_ID = '-1001882613037';
 
 bot.onText(/\/check (.+)/, async (msg, match) => {
     const chatId = msg.chat.id;
@@ -29,7 +37,7 @@ bot.onText(/\/check (.+)/, async (msg, match) => {
 
     try {
         const member = await bot.getChatMember(
-            CHANNEL_USERNAME,
+            CHANNEL_ID,
             userId
         );
 

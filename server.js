@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require("fs");
 const { readFileSync } = require('fs');
 require('dotenv').config();
 const { resolveBotToken, buildTelegramApiUrl, getBotTokenDiagnostics } = require('./telegram-config');
@@ -10,6 +11,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+app.use(express.static(path.join(__dirname, "public")));
 
 const BOT_TOKEN = resolveBotToken(process.env);
 const CHANNEL_ID = '-1001882613037';
@@ -110,89 +113,42 @@ app.post('/verify', async (req, res) => {
 
         if (isMember) {
 
-    const telegramUser = data.result.user;
-
-    let profilePhotoUrl = null;
-
-    try {
-
-        const photoResponse = await fetch(
-            buildTelegramApiUrl(BOT_TOKEN, 'getUserProfilePhotos'),
-            {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_id: telegramUser.id,
-                    limit: 1
-                })
-            }
-        );
-
-        const photoData = await photoResponse.json();
-
-        if (
-            photoData.ok &&
-            photoData.result.total_count > 0 &&
-            photoData.result.photos.length > 0
-        ) {
-
-            const photoSizes = photoData.result.photos[0];
-
-            // Largest available photo
-            const largestPhoto = photoSizes[photoSizes.length - 1];
-
-            const fileResponse = await fetch(
-                buildTelegramApiUrl(BOT_TOKEN, 'getFile'),
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        file_id: largestPhoto.file_id
-                    })
-                }
-            );
-
-            const fileData = await fileResponse.json();
-
-            if (fileData.ok) {
-
-                profilePhotoUrl =
-                    `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
-
-            }
-
+    // Get Telegram user information
+    const chatResponse = await fetch(
+        buildTelegramApiUrl(BOT_TOKEN, "getChat"),
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                chat_id: Number(userId)
+            })
         }
+    );
 
-    } catch (photoError) {
+    const chatData = await chatResponse.json();
 
-        console.error('Profile photo error:', photoError);
+    const users = loadUsers();
 
-    }
+    users[userId] = {
+        telegramUserId: String(userId),
+        username: chatData.result?.username || "",
+        firstName: chatData.result?.first_name || "",
+        lastName: chatData.result?.last_name || "",
+        photoUrl: "",
+        verified: true,
+        plan: "free",
+        premiumUntil: null,
+        joinedAt: new Date().toISOString()
+    };
+
+    saveUsers(users);
 
     return res.json({
-
         success: true,
-
-        message: 'You are a verified member!',
-
-        user: {
-
-            id: telegramUser.id,
-
-            username: telegramUser.username || null,
-
-            firstName: telegramUser.first_name || '',
-
-            lastName: telegramUser.last_name || '',
-
-            profilePhotoUrl
-
-        }
-
+        message: "You are a verified member!",
+        user: users[userId]
     });
 
 }
@@ -265,6 +221,22 @@ async function startTelegramBot() {
 
                 const chatId = update.message.chat.id;
                 const text = update.message.text || '';
+
+                const users = loadUsers();
+
+users[String(chatId)] = {
+    ...(users[String(chatId)] || {}),
+    telegramUserId: String(chatId),
+    username: update.message.from?.username || "",
+    firstName: update.message.from?.first_name || "",
+    lastName: update.message.from?.last_name || "",
+    verified: true,
+    plan: users[String(chatId)]?.plan || "free",
+    premiumUntil: users[String(chatId)]?.premiumUntil || null,
+    joinedAt: users[String(chatId)]?.joinedAt || new Date().toISOString()
+};
+
+saveUsers(users);
 
 
                 // ============================================
@@ -443,6 +415,131 @@ startTelegramBot();
 // ============================================
 // START SERVER
 // ============================================
+
+function loadUsers() {
+    try {
+        return JSON.parse(fs.readFileSync("users.json", "utf8"));
+    } catch {
+        return {};
+    }
+}
+
+function saveUsers(users) {
+    fs.writeFileSync(
+        "users.json",
+        JSON.stringify(users, null, 2)
+    );
+}
+
+
+// ============================================
+// ADMIN - GET USER
+// ============================================
+
+app.get("/admin/user/:id", (req, res) => {
+
+    const users = loadUsers();
+
+    const user = users[req.params.id];
+
+    if (!user) {
+
+        return res.json({
+            success: false,
+            message: "User not found"
+        });
+
+    }
+
+    res.json({
+        success: true,
+        user
+    });
+
+});
+
+
+
+// ===============================
+// ADMIN API
+// ===============================
+
+// Get all users
+app.get("/api/users", (req, res) => {
+    const users = loadUsers();
+    res.json(users);
+});
+
+// Make Premium
+app.post("/api/premium", (req, res) => {
+
+    const { telegramId } = req.body;
+
+    const users = loadUsers();
+
+    if (!users[telegramId]) {
+        return res.json({
+            success: false,
+            message: "User not found"
+        });
+    }
+
+    users[telegramId].plan = "premium";
+    users[telegramId].premium = true;
+
+    saveUsers(users);
+
+    res.json({
+        success: true
+    });
+
+});
+
+// Remove Premium
+app.post("/api/remove-premium", (req, res) => {
+
+    const { telegramId } = req.body;
+
+    const users = loadUsers();
+
+    if (!users[telegramId]) {
+        return res.json({
+            success: false,
+            message: "User not found"
+        });
+    }
+
+    users[telegramId].plan = "free";
+    users[telegramId].premium = false;
+
+    saveUsers(users);
+
+    res.json({
+        success: true
+    });
+
+});
+
+
+
+// ============================================
+// GET ALL USERS
+// ============================================
+
+app.get("/admin/users", (req, res) => {
+
+    const users = loadUsers();
+
+    const list = Object.keys(users).map(id => ({
+        id,
+        ...users[id]
+    }));
+
+    res.json(list);
+
+});
+
+
 
 app.listen(PORT, '0.0.0.0', () => {
 

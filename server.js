@@ -129,21 +129,23 @@ app.post('/verify', async (req, res) => {
 
     const chatData = await chatResponse.json();
 
-    const users = loadUsers();
+    const oldUser = users[userId] || {};
 
-    users[userId] = {
-        telegramUserId: String(userId),
-        username: chatData.result?.username || "",
-        firstName: chatData.result?.first_name || "",
-        lastName: chatData.result?.last_name || "",
-        photoUrl: "",
-        verified: true,
-        plan: "free",
-        premiumUntil: null,
-        joinedAt: new Date().toISOString()
-    };
+users[userId] = {
+    telegramUserId: String(userId),
+    username: chatData.result?.username || oldUser.username || "",
+    firstName: chatData.result?.first_name || oldUser.firstName || "",
+    lastName: chatData.result?.last_name || oldUser.lastName || "",
+    photoUrl: oldUser.photoUrl || "",
+    verified: true,
 
-    saveUsers(users);
+    plan: oldUser.plan || "free",
+    premiumUntil: oldUser.premiumUntil || null,
+
+    joinedAt: oldUser.joinedAt || new Date().toISOString()
+};
+
+saveUsers(users);
 
     return res.json({
         success: true,

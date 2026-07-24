@@ -1,43 +1,117 @@
 const API = "";
 
-async function loadUsers() {
+const card = document.getElementById("card");
+
+const photo = document.getElementById("photo");
+const nameEl = document.getElementById("name");
+const usernameEl = document.getElementById("username");
+const tgidEl = document.getElementById("tgid");
+const planEl = document.getElementById("plan");
+const expireEl = document.getElementById("expire");
+const remainingEl = document.getElementById("remaining");
+
+const totalUsers = document.getElementById("totalUsers");
+const premiumUsers = document.getElementById("premiumUsers");
+const freeUsers = document.getElementById("freeUsers");
+
+const searchBtn = document.getElementById("search");
+const userInput = document.getElementById("userid");
+
+userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        searchBtn.click();
+    }
+});
+
+let currentUser = null;
+
+searchBtn.onclick = async () => {
+
+    const id = userInput.value.trim();
+
+    if (!id) {
+        alert("Enter Telegram ID");
+        return;
+    }
 
     const res = await fetch(API + "/admin/users");
     const users = await res.json();
+    
+    totalUsers.innerText = users.length;
 
-    const tbody = document.getElementById("users");
+premiumUsers.innerText =
+    users.filter(x => x.plan === "premium").length;
 
-    tbody.innerHTML = "";
+freeUsers.innerText =
+    users.filter(x => x.plan !== "premium").length;
 
-    users.forEach(user => {
+    const user = users.find(x => x.telegramUserId == id);
 
-        tbody.innerHTML += `
-        <tr>
-            <td>${user.telegramUserId}</td>
-            <td>${user.firstName || ""} ${user.lastName || ""}</td>
-            <td>@${user.username || "-"}</td>
-            <td>
-                <span class="${user.plan === "premium" ? "premium" : "free"}">
-                    ${user.plan}
-                </span>
-            </td>
-            <td>
-                <button onclick="setPlan('${user.telegramUserId}','premium')">
-                    Premium
-                </button>
+    if (!user) {
+        alert("User not found");
+        card.classList.add("hidden");
+        return;
+    }
 
-                <button onclick="setPlan('${user.telegramUserId}','free')">
-                    Free
-                </button>
-            </td>
-        </tr>
-        `;
+    currentUser = user;
 
-    });
+    card.classList.remove("hidden");
+
+    nameEl.innerText =
+        `${user.firstName || ""} ${user.lastName || ""}`;
+
+    usernameEl.innerText =
+        user.username
+            ? "@" + user.username
+            : "No Username";
+
+    tgidEl.innerText = user.telegramUserId;
+
+    planEl.innerText =
+    user.plan === "premium"
+        ? "👑 Premium Plan"
+        : "Free Plan";
+
+if (user.premiumUntil) {
+
+    const expireDate = new Date(user.premiumUntil);
+
+    expireEl.innerText =
+        "Premium Until : " +
+        expireDate.toLocaleDateString();
+
+    const diff =
+        expireDate - new Date();
+
+    const days =
+        Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+    remainingEl.innerText =
+        "Remaining : " +
+        (days > 0 ? days : 0) +
+        " Days";
+
+} else {
+
+    expireEl.innerText =
+        "Premium Until : -";
+
+    remainingEl.innerText =
+        "Remaining : -";
 
 }
 
-async function setPlan(id, plan) {
+if (user.photoUrl) {
+    photo.src = user.photoUrl;
+} else {
+    photo.src = "https://i.imgur.com/6VBx3io.png";
+}
+
+};
+
+async function changePlan(plan, days = 0) {
+
+    if (!currentUser) return;
 
     const res = await fetch(API + "/admin/set-plan", {
 
@@ -48,8 +122,11 @@ async function setPlan(id, plan) {
         },
 
         body: JSON.stringify({
-            id,
-            plan
+
+            id: currentUser.telegramUserId,
+            plan,
+            days
+
         })
 
     });
@@ -58,8 +135,18 @@ async function setPlan(id, plan) {
 
     alert(data.message);
 
-    loadUsers();
+    searchBtn.click();
 
 }
 
-loadUsers();
+document
+.getElementById("premium30")
+.onclick = () => changePlan("premium",30);
+
+document
+.getElementById("premium90")
+.onclick = () => changePlan("premium",90);
+
+document
+.getElementById("remove")
+.onclick = () => changePlan("free",0);

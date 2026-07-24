@@ -5,8 +5,8 @@
     "firstName": "🌱PROF.",
     "lastName": "Rasel",
     "verified": true,
-    "plan": "free",
-    "premiumUntil": null,
+    "plan": "premium",
+    "premiumUntil": "2026-08-23T10:12:13.680Z",
     "joinedAt": "2026-07-23T19:29:55.923Z"
   }
 }

@@ -546,7 +546,7 @@ app.get("/admin/users", (req, res) => {
 
 app.post("/admin/set-plan", (req, res) => {
 
-    const { id, plan } = req.body;
+    const { id, plan, days } = req.body;
 
     const users = loadUsers();
 
@@ -560,16 +560,24 @@ app.post("/admin/set-plan", (req, res) => {
     users[id].plan = plan;
 
     if (plan === "premium") {
-        users[id].premiumUntil = "Lifetime";
+
+        const expire = new Date();
+
+        expire.setDate(expire.getDate() + Number(days || 30));
+
+        users[id].premiumUntil = expire.toISOString();
+
     } else {
+
         users[id].premiumUntil = null;
+
     }
 
     saveUsers(users);
 
     res.json({
         success: true,
-        message: "Plan Updated"
+        message: "Plan Updated Successfully"
     });
 
 });

@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rasel Admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>Rasel Admin Panel</title>
 
 <link rel="stylesheet" href="admin.css">
 
@@ -13,23 +16,109 @@
 
 <div class="container">
 
-<h1>Rasel Enhancer Admin</h1>
+    <div class="stats">
 
-<input
-id="userid"
-placeholder="Telegram ID">
+    <div class="stat-card">
+        <h3>Total Users</h3>
+        <h1 id="totalUsers">0</h1>
+    </div>
 
-<button id="search">
+    <div class="stat-card premium">
+        <h3>Premium Users</h3>
+        <h1 id="premiumUsers">0</h1>
+    </div>
 
-Search User
+    <div class="stat-card free">
+        <h3>Free Users</h3>
+        <h1 id="freeUsers">0</h1>
+    </div>
+
+</div>
+
+<div class="top">
+
+    <h1>👑 Rasel Admin</h1>
+
+    <input
+        id="userid"
+        type="text"
+        placeholder="Enter Telegram ID">
+
+    <button id="search">
+        Search
+    </button>
+
+    <div id="userList"></div>
+
+</div>
+
+
+<div id="card" class="hidden">
+
+<div class="profile">
+
+<img
+id="photo"
+src="https://i.imgur.com/6VBx3io.png">
+
+<div>
+
+<h2 id="name">Loading...</h2>
+
+<p id="username">@username</p>
+
+<p>ID :
+<span id="tgid"></span>
+</p>
+
+</div>
+
+</div>
+
+<div class="plan">
+
+    <h3 id="plan">
+        Free Plan
+    </h3>
+
+    <p id="expire">
+        Premium Until : -
+    </p>
+
+    <p id="remaining">
+    Remaining : -
+</p>
+
+</div>
+
+<div class="buttons">
+
+<button id="premium30">
+
+Give 30 Days Premium
 
 </button>
 
-<div id="result"></div>
+<button id="premium90">
+
+Give 90 Days Premium
+
+</button>
+
+<button id="remove">
+
+Remove Premium
+
+</button>
+
+</div>
+
+</div>
 
 </div>
 
 <script src="admin.js"></script>
 
 </body>
+
 </html>

@@ -25,6 +25,49 @@ userInput.addEventListener("keypress", (e) => {
 
 let currentUser = null;
 
+// ==========================
+// Load all users automatically
+// ==========================
+async function loadAllUsers() {
+
+    const res = await fetch(API + "/admin/users");
+    const users = await res.json();
+
+    totalUsers.innerText = users.length;
+
+    premiumUsers.innerText =
+        users.filter(x => x.plan === "premium").length;
+
+    freeUsers.innerText =
+        users.filter(x => x.plan !== "premium").length;
+
+    const list = document.getElementById("userList");
+
+    list.innerHTML = "";
+
+    users.forEach(user => {
+
+        list.innerHTML += `
+        <div class="user-item" onclick="selectUser('${user.telegramUserId}')">
+            <b>${user.firstName || ""} ${user.lastName || ""}</b><br>
+            @${user.username || "No Username"}<br>
+            ID : ${user.telegramUserId}<br>
+            ${user.plan === "premium" ? "👑 Premium" : "Free"}
+        </div>
+        `;
+
+    });
+
+}
+
+window.selectUser = function(id){
+
+    userInput.value = id;
+
+    searchBtn.click();
+
+}
+
 searchBtn.onclick = async () => {
 
     const id = userInput.value.trim();
@@ -150,3 +193,5 @@ document
 document
 .getElementById("remove")
 .onclick = () => changePlan("free",0);
+
+loadAllUsers();

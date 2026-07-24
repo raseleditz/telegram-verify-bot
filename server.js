@@ -76,6 +76,7 @@ app.post('/verify', async (req, res) => {
     }
 
     try {
+        const users = loadUsers();
 
         const response = await fetch(
             buildTelegramApiUrl(BOT_TOKEN, 'getChatMember'),
